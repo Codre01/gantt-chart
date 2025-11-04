@@ -1,65 +1,161 @@
-import Image from "next/image";
+'use client';
+
+import { useState } from 'react';
+import { TaskProvider, useTaskState, useTaskActions, useFilteredTasks } from '@/contexts/TaskContext';
+import { TaskForm } from '@/components/TaskForm';
+import { ProjectSelector } from '@/components/ProjectSelector';
+import { ZoomControl } from '@/components/ZoomControl';
+import { FilterControls } from '@/components/FilterControls';
+import { GanttTimeline } from '@/components/GanttTimeline';
+import { Button } from '@/components/ui/button';
+import type { Task } from '@/types';
+
+function DashboardContent() {
+  const state = useTaskState();
+  const { selectProject, addTask, updateTask, deleteTask, setTimelineView } = useTaskActions();
+  const filteredTasks = useFilteredTasks();
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | undefined>(undefined);
+
+  // Get tasks for selected project
+  const projectTasks = state.selectedProjectId
+    ? state.tasks.filter((task) => task.projectId === state.selectedProjectId)
+    : [];
+
+  const handleCreateTask = () => {
+    setEditingTask(undefined);
+    setIsFormOpen(true);
+  };
+
+  const handleEditTask = (task: Task) => {
+    setEditingTask(task);
+    setIsFormOpen(true);
+  };
+
+  const handleFormSubmit = (task: Task) => {
+    if (editingTask) {
+      // Edit mode - call UPDATE_TASK action
+      updateTask(task);
+    } else {
+      // Create mode - call ADD_TASK action
+      addTask(task);
+    }
+
+    // Close form after successful submission
+    setIsFormOpen(false);
+    setEditingTask(undefined);
+  };
+
+  const handleFormCancel = () => {
+    // Close form and reset state
+    setIsFormOpen(false);
+    setEditingTask(undefined);
+  };
+
+  const handleDeleteTask = (taskId: string) => {
+    // Call DELETE_TASK action
+    deleteTask(taskId);
+
+    // Close form after deletion
+    setIsFormOpen(false);
+    setEditingTask(undefined);
+  };
+
+  return (
+    <div className="min-h-screen bg-muted font-sans">
+      <div className="mx-auto max-w-7xl space-y-6 p-6 md:p-8">
+        <header className="">
+          <h1 className="text-3xl font-bold text-foreground md:text-4xl">
+            Task Tracker Dashboard
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">Manage your projects and visualize timelines</p>
+        </header>
+
+        {/* Project Selector */}
+        <section className="">
+          <ProjectSelector
+            projects={state.projects}
+            selectedProjectId={state.selectedProjectId}
+            onSelectProject={selectProject}
+          />
+        </section>
+
+        {/* Task Management */}
+        {state.selectedProjectId && (
+          <section className="space-y-4">
+            <div className="flex flex-col gap-4 rounded-xl bg-card p-6 shadow-md sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2">
+                <div className="h-1 w-1 rounded-full bg-primary"></div>
+                <h2 className="text-lg font-semibold text-card-foreground">
+                  Gantt Timeline
+                </h2>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <ZoomControl
+                  currentView={state.timelineView}
+                  onViewChange={setTimelineView}
+                />
+                <Button onClick={handleCreateTask} className="shadow-sm">Create New Task</Button>
+              </div>
+            </div>
+
+            {/* Filter Controls */}
+            <div className="rounded-xl bg-card p-4 shadow-md">
+              <FilterControls />
+            </div>
+
+            {/* Gantt Timeline */}
+            <div className="overflow-hidden rounded-xl bg-card shadow-md">
+              <GanttTimeline
+                tasks={filteredTasks}
+                timelineView={state.timelineView}
+                onTaskSelect={(taskId) => {
+                  const task = projectTasks.find(t => t.id === taskId);
+                  if (task) handleEditTask(task);
+                }}
+              />
+            </div>
+          </section>
+        )}
+
+        {/* Task Form Modal/Dialog */}
+        {isFormOpen && state.selectedProjectId && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="task-form-title"
+          >
+            <div className="m-4 w-full max-w-2xl rounded-2xl bg-card p-8 shadow-2xl">
+              <div className="mb-6 flex items-center gap-3">
+                <div className="h-2 w-2 rounded-full bg-primary"></div>
+                <h2
+                  id="task-form-title"
+                  className="text-2xl font-bold text-card-foreground"
+                >
+                  {editingTask ? 'Edit Task' : 'Create New Task'}
+                </h2>
+              </div>
+              <TaskForm
+                task={editingTask}
+                projectId={state.selectedProjectId}
+                availableTasks={projectTasks}
+                onSubmit={handleFormSubmit}
+                onCancel={handleFormCancel}
+                onDelete={handleDeleteTask}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <TaskProvider>
+      <DashboardContent />
+    </TaskProvider>
   );
 }
