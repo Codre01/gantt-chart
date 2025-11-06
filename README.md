@@ -231,12 +231,6 @@ interface TaskBarProps {
 }
 ```
 
-**Status Colors**:
-- Not Started: Gray (#9CA3AF) with dashed border
-- In Progress: Blue (#3B82F6) with progress icon
-- Completed: Green (#10B981) with checkmark icon
-- Blocked: Red (#EF4444) with diagonal stripes
-
 #### TaskForm
 
 Form component for creating and editing tasks with validation.
@@ -311,8 +305,6 @@ This application is built with accessibility as a core requirement:
 - **Focus Management**: Logical focus order and focus trapping in dialogs
 - **Semantic HTML**: Proper use of semantic elements and ARIA roles
 
-For detailed accessibility information, see [ACCESSIBILITY.md](./ACCESSIBILITY.md).
-
 ## Browser Support
 
 - Chrome (latest)
@@ -339,20 +331,6 @@ Potential features for future iterations:
 - Dark mode support
 - Mobile-optimized touch interface
 - Project progress analytics dashboard
-
-## Contributing
-
-This is a demonstration project. For production use, consider:
-
-- Adding backend persistence (database)
-- Implementing authentication and authorization
-- Adding comprehensive test coverage
-- Setting up CI/CD pipelines
-- Implementing error tracking and monitoring
-
-## License
-
-This project is for demonstration purposes.
 
 ## Learn More
 
