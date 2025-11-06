@@ -6,13 +6,18 @@ import { TaskForm } from '@/components/TaskForm';
 import { ProjectSelector } from '@/components/ProjectSelector';
 import { ZoomControl } from '@/components/ZoomControl';
 import { FilterControls } from '@/components/FilterControls';
+import { DateRangeFilter } from '@/components/DateRangeFilter';
 import { GanttTimeline } from '@/components/GanttTimeline';
 import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { Toaster } from 'sonner';
+import { calculateDateRangeFromPreset } from '@/lib/timelineUtils';
 import type { Task } from '@/types';
+import type { DateRangePreset } from '@/contexts/TaskContext';
 
 function DashboardContent() {
   const state = useTaskState();
-  const { selectProject, addTask, updateTask, deleteTask, setTimelineView } = useTaskActions();
+  const { selectProject, addTask, updateTask, deleteTask, setTimelineView, setDateRange } = useTaskActions();
   const filteredTasks = useFilteredTasks();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | undefined>(undefined);
@@ -61,14 +66,30 @@ function DashboardContent() {
     setEditingTask(undefined);
   };
 
+  const handleDateRangeChange = (preset: DateRangePreset) => {
+    const dateRange = calculateDateRangeFromPreset(preset);
+    setDateRange(dateRange);
+  };
+
+  const handleCustomDateChange = (startDate: Date, endDate: Date) => {
+    setDateRange({
+      start: startDate,
+      end: endDate,
+      preset: 'custom',
+    });
+  };
+
   return (
     <div className="min-h-screen bg-muted font-sans">
-      <div className="mx-auto max-w-7xl space-y-6 p-6 md:p-8">
-        <header className="">
-          <h1 className="text-3xl font-bold text-foreground md:text-4xl">
-            Task Tracker Dashboard
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">Manage your projects and visualize timelines</p>
+      <div className="mx-auto space-y-6 p-6 md:p-8">
+        <header className="flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground md:text-4xl">
+              Task Tracker Dashboard
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">Manage your projects and visualize timelines</p>
+          </div>
+          <ThemeToggle />
         </header>
 
         {/* Project Selector */}
@@ -101,7 +122,15 @@ function DashboardContent() {
 
             {/* Filter Controls */}
             <div className="rounded-xl bg-card p-4 shadow-md">
-              <FilterControls />
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <FilterControls />
+                <DateRangeFilter
+                  currentPreset={state.dateRange.preset}
+                  currentDateRange={state.dateRange}
+                  onPresetChange={handleDateRangeChange}
+                  onCustomDateChange={handleCustomDateChange}
+                />
+              </div>
             </div>
 
             {/* Gantt Timeline */}
@@ -155,6 +184,7 @@ function DashboardContent() {
 export default function Home() {
   return (
     <TaskProvider>
+      <Toaster position="top-right" richColors />
       <DashboardContent />
     </TaskProvider>
   );

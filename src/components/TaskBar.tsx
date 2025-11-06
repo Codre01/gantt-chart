@@ -58,9 +58,6 @@ function TaskTooltip({ task }: TaskTooltipProps) {
   );
 }
 
-/**
- * Get status-based styling configuration
- */
 function getStatusConfig(status: TaskStatus) {
   switch (status) {
     case 'not-started':
@@ -151,15 +148,15 @@ export function TaskBar({
       <Tooltip>
         <TooltipTrigger asChild>
           <div
-            className={`absolute h-12 cursor-pointer rounded border-2 px-2 py-1 text-xs font-medium transition-all hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:focus-visible:outline-blue-400 ${
+            className={`group absolute h-11 cursor-pointer rounded-md border-2 px-3 py-2 text-xs font-medium transition-all hover:shadow-lg hover:scale-[1.02] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
               statusConfig.bgColor
             } ${statusConfig.borderColor} ${statusConfig.borderStyle} ${statusConfig.textColor} ${
-              isSelected ? 'ring-2 ring-blue-500 ring-offset-2' : ''
+              isSelected ? 'ring-2 ring-ring ring-offset-2 ring-offset-background' : ''
             } ${statusConfig.pattern === 'blocked-stripes' ? 'relative overflow-hidden' : ''}`}
             style={{
               left: `${left}px`,
               width: `${width}px`,
-              minWidth: '40px', // Ensure minimum width for visibility
+              minWidth: '48px',
             }}
             onClick={handleClick}
             onKeyDown={handleKeyDown}
@@ -169,29 +166,27 @@ export function TaskBar({
             aria-describedby={descriptionId}
             data-task-index={taskIndex}
           >
-            {/* Diagonal stripes pattern for blocked tasks */}
             {statusConfig.pattern === 'blocked-stripes' && (
               <div
                 className="absolute inset-0 opacity-20"
                 style={{
                   backgroundImage:
-                    'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0, 0, 0, 0.3) 10px, rgba(0, 0, 0, 0.3) 20px)',
+                    'repeating-linear-gradient(45deg, transparent, transparent 8px, currentColor 8px, currentColor 16px)',
                 }}
               />
             )}
             
-            <div className="relative flex items-center gap-1">
-              <StatusIcon className="h-3 w-3 shrink-0" />
-              <div className="truncate text-lg">{task.title}</div>
+            <div className="relative flex items-center gap-1.5">
+              <StatusIcon className="h-3.5 w-3.5 shrink-0 opacity-80" />
+              <span className="truncate font-medium">{task.title}</span>
             </div>
           </div>
         </TooltipTrigger>
-        <TooltipContent side="top" sideOffset={5}>
+        <TooltipContent side="top" sideOffset={8}>
           <TaskTooltip task={task} />
         </TooltipContent>
       </Tooltip>
       
-      {/* Visually hidden description for screen readers */}
       <div id={descriptionId} className="sr-only">
         {task.title}, {formatDate(task.startDate)} to {formatDate(task.endDate)}, Status: {formatStatus(task.status)}, Assigned to {task.assignee}
       </div>

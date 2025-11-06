@@ -4,6 +4,23 @@ import React, { createContext, useContext, useReducer, type ReactNode } from 're
 import type { Project, Task, Filters } from '@/types';
 import { initialProjects, initialTasks } from '@/data/initialData';
 
+// Date range preset types
+export type DateRangePreset = 
+  | 'all'
+  | 'this-month'
+  | 'next-month'
+  | 'this-quarter'
+  | 'next-quarter'
+  | 'this-year'
+  | 'next-year'
+  | 'custom';
+
+export interface DateRange {
+  start: Date | null;
+  end: Date | null;
+  preset: DateRangePreset;
+}
+
 // State interface
 export interface TaskState {
   projects: Project[];
@@ -11,6 +28,7 @@ export interface TaskState {
   selectedProjectId: string | null;
   filters: Filters;
   timelineView: 'day' | 'week' | 'month';
+  dateRange: DateRange;
 }
 
 // Action types
@@ -21,7 +39,8 @@ type TaskAction =
   | { type: 'DELETE_TASK'; payload: string }
   | { type: 'SET_FILTER'; payload: Partial<Filters> }
   | { type: 'SET_SEARCH'; payload: string }
-  | { type: 'SET_TIMELINE_VIEW'; payload: 'day' | 'week' | 'month' };
+  | { type: 'SET_TIMELINE_VIEW'; payload: 'day' | 'week' | 'month' }
+  | { type: 'SET_DATE_RANGE'; payload: DateRange };
 
 // Initial state
 const initialState: TaskState = {
@@ -34,6 +53,11 @@ const initialState: TaskState = {
     searchText: '',
   },
   timelineView: 'day',
+  dateRange: {
+    start: null,
+    end: null,
+    preset: 'all',
+  },
 };
 
 // Reducer function
@@ -93,6 +117,12 @@ function taskReducer(state: TaskState, action: TaskAction): TaskState {
       return {
         ...state,
         timelineView: action.payload,
+      };
+
+    case 'SET_DATE_RANGE':
+      return {
+        ...state,
+        dateRange: action.payload,
       };
 
     default:
@@ -169,12 +199,42 @@ function searchByTitle(tasks: Task[], searchText: string): Task[] {
 }
 
 /**
+ * Filters tasks by date range
+ * @param tasks - Array of tasks to filter
+ * @param dateRange - Date range to filter by
+ * @returns Tasks that fall within or overlap the date range
+ */
+function filterByDateRange(tasks: Task[], dateRange: DateRange): Task[] {
+  if (dateRange.preset === 'all' || (!dateRange.start && !dateRange.end)) {
+    return tasks;
+  }
+
+  return tasks.filter((task) => {
+    // Task overlaps with range if:
+    // task.startDate <= rangeEnd AND task.endDate >= rangeStart
+    const rangeStart = dateRange.start;
+    const rangeEnd = dateRange.end;
+
+    if (rangeStart && rangeEnd) {
+      return task.startDate <= rangeEnd && task.endDate >= rangeStart;
+    } else if (rangeStart) {
+      return task.endDate >= rangeStart;
+    } else if (rangeEnd) {
+      return task.startDate <= rangeEnd;
+    }
+
+    return true;
+  });
+}
+
+/**
  * Applies all filters and search to tasks
  * @param tasks - Array of tasks to filter
  * @param filters - Filter criteria including status, assignee, and search text
+ * @param dateRange - Date range to filter by
  * @returns Filtered and searched tasks
  */
-function getFilteredTasks(tasks: Task[], filters: Filters): Task[] {
+function getFilteredTasks(tasks: Task[], filters: Filters, dateRange: DateRange): Task[] {
   let filteredTasks = tasks;
   
   // Apply status filter
@@ -185,6 +245,9 @@ function getFilteredTasks(tasks: Task[], filters: Filters): Task[] {
   
   // Apply search
   filteredTasks = searchByTitle(filteredTasks, filters.searchText);
+  
+  // Apply date range filter
+  filteredTasks = filterByDateRange(filteredTasks, dateRange);
   
   return filteredTasks;
 }
@@ -212,8 +275,8 @@ export function useFilteredTasks() {
     ? state.tasks.filter((task) => task.projectId === state.selectedProjectId)
     : state.tasks;
   
-  // Apply filters and search
-  return getFilteredTasks(projectTasks, state.filters);
+  // Apply filters, search, and date range
+  return getFilteredTasks(projectTasks, state.filters, state.dateRange);
 }
 
 // Custom hook to access actions
@@ -246,5 +309,8 @@ export function useTaskActions() {
     
     setTimelineView: (view: 'day' | 'week' | 'month') =>
       dispatch({ type: 'SET_TIMELINE_VIEW', payload: view }),
+    
+    setDateRange: (dateRange: DateRange) =>
+      dispatch({ type: 'SET_DATE_RANGE', payload: dateRange }),
   };
 }

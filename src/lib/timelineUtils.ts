@@ -1,4 +1,5 @@
 import type { Task } from '@/types';
+import type { DateRange, DateRangePreset } from '@/contexts/TaskContext';
 
 /**
  * Pixels per day for day view (40px per day)
@@ -156,4 +157,142 @@ export function calculateTodayPosition(
   const today = new Date();
   const daysSinceStart = differenceInDays(today, timelineStart);
   return daysSinceStart * pixelsPerDay;
+}
+
+/**
+ * Gets the start and end of the current month
+ */
+function getThisMonth(): { start: Date; end: Date } {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  return { start, end };
+}
+
+/**
+ * Gets the start and end of the next month
+ */
+function getNextMonth(): { start: Date; end: Date } {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + 2, 0);
+  return { start, end };
+}
+
+/**
+ * Gets the start and end of the current quarter
+ */
+function getThisQuarter(): { start: Date; end: Date } {
+  const now = new Date();
+  const quarterStartMonth = Math.floor(now.getMonth() / 3) * 3;
+  const start = new Date(now.getFullYear(), quarterStartMonth, 1);
+  const end = new Date(now.getFullYear(), quarterStartMonth + 3, 0);
+  return { start, end };
+}
+
+/**
+ * Gets the start and end of the next quarter
+ */
+function getNextQuarter(): { start: Date; end: Date } {
+  const now = new Date();
+  const quarterStartMonth = Math.floor(now.getMonth() / 3) * 3;
+  const nextQuarterStartMonth = quarterStartMonth + 3;
+  
+  let year = now.getFullYear();
+  let startMonth = nextQuarterStartMonth;
+  
+  if (startMonth >= 12) {
+    year += 1;
+    startMonth = startMonth - 12;
+  }
+  
+  const start = new Date(year, startMonth, 1);
+  const end = new Date(year, startMonth + 3, 0);
+  return { start, end };
+}
+
+/**
+ * Gets the start and end of the current year
+ */
+function getThisYear(): { start: Date; end: Date } {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 1);
+  const end = new Date(now.getFullYear(), 11, 31);
+  return { start, end };
+}
+
+/**
+ * Gets the start and end of the next year
+ */
+function getNextYear(): { start: Date; end: Date } {
+  const now = new Date();
+  const start = new Date(now.getFullYear() + 1, 0, 1);
+  const end = new Date(now.getFullYear() + 1, 11, 31);
+  return { start, end };
+}
+
+/**
+ * Calculates date range based on preset
+ * @param preset - The preset to calculate dates for
+ * @returns DateRange object with start and end dates
+ */
+export function calculateDateRangeFromPreset(preset: DateRangePreset): DateRange {
+  if (preset === 'all' || preset === 'custom') {
+    return { start: null, end: null, preset };
+  }
+
+  let range: { start: Date; end: Date };
+
+  switch (preset) {
+    case 'this-month':
+      range = getThisMonth();
+      break;
+    case 'next-month':
+      range = getNextMonth();
+      break;
+    case 'this-quarter':
+      range = getThisQuarter();
+      break;
+    case 'next-quarter':
+      range = getNextQuarter();
+      break;
+    case 'this-year':
+      range = getThisYear();
+      break;
+    case 'next-year':
+      range = getNextYear();
+      break;
+    default:
+      return { start: null, end: null, preset: 'all' };
+  }
+
+  return { start: range.start, end: range.end, preset };
+}
+
+/**
+ * Gets a human-readable label for a date range preset
+ * @param preset - The preset to get label for
+ * @returns Human-readable label
+ */
+export function getDateRangeLabel(preset: DateRangePreset): string {
+  switch (preset) {
+    case 'all':
+      return 'All Time';
+    case 'this-month':
+      return 'This Month';
+    case 'next-month':
+      return 'Next Month';
+    case 'this-quarter':
+      return 'This Quarter';
+    case 'next-quarter':
+      return 'Next Quarter';
+    case 'this-year':
+      return 'This Year';
+    case 'next-year':
+      return 'Next Year';
+    case 'custom':
+      return 'Custom Range';
+    default:
+      return 'All Time';
+  }
 }

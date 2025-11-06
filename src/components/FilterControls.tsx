@@ -56,7 +56,7 @@ export function FilterControls() {
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [searchInput, setSearch]);
+  }, [searchInput]);
 
   // Handle status filter toggle
   const handleStatusToggle = useCallback(
@@ -98,66 +98,64 @@ export function FilterControls() {
     state.filters.searchText.length > 0;
 
   return (
-    <div className="flex flex-wrap items-end gap-4 p-4 bg-white border-b">
+    <div className="flex flex-wrap items-end gap-6 px-6 py-5 bg-card ">
       {/* Search Input */}
-      <div className="flex-1 min-w-[200px]">
-        <Label htmlFor="search-input" className="text-sm font-medium">
-          Search Tasks
+      <div className="flex-1 min-w-[220px]">
+        <Label htmlFor="search-input" className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-2 block">
+          Search
         </Label>
-        <div className="relative mt-1.5">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-[15px] text-muted-foreground/60" />
           <Input
             id="search-input"
             type="text"
-            placeholder="Search by title..."
+            placeholder="Search tasks..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            className="pl-9"
+            className="pl-9 h-9 text-sm bg-background border-border focus-visible:ring-1 focus-visible:ring-ring"
             aria-label="Search tasks by title"
           />
         </div>
       </div>
 
       {/* Status Filter */}
-      <div className="min-w-[180px]">
-        <Label htmlFor="status-filter" className="text-sm font-medium">
-          Filter by Status
+      <div className="min-w-[200px]">
+        <Label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-2 block">
+          Status
         </Label>
-        <div className="mt-1.5 space-y-2">
-          <div className="flex flex-wrap gap-2">
-            {STATUS_OPTIONS.map((option) => {
-              const isSelected = state.filters.status.includes(option.value);
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => handleStatusToggle(option.value)}
-                  className={`
-                    px-3 py-1.5 text-sm rounded-md border transition-colors
-                    focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:focus-visible:outline-blue-400
-                    ${
-                      isSelected
-                        ? 'bg-primary text-primary-foreground border-primary'
-                        : 'bg-background hover:bg-accent hover:text-accent-foreground border-input'
-                    }
-                  `}
-                  aria-pressed={isSelected}
-                  aria-label={`Filter by ${option.label}`}
-                >
-                  {option.label}
-                </button>
-              );
-            })}
-          </div>
+        <div className="flex flex-wrap gap-1.5">
+          {STATUS_OPTIONS.map((option) => {
+            const isSelected = state.filters.status.includes(option.value);
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => handleStatusToggle(option.value)}
+                className={`
+                  px-3 py-1.5 text-[13px] font-medium rounded-[var(--radius-md)] transition-all duration-200
+                  focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary
+                  ${
+                    isSelected
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'bg-secondary text-secondary-foreground hover:bg-accent'
+                  }
+                `}
+                aria-pressed={isSelected}
+                aria-label={`Filter by ${option.label}`}
+              >
+                {option.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {/* Assignee Filter */}
-      <div className="min-w-[180px]">
-        <Label htmlFor="assignee-filter" className="text-sm font-medium">
-          Filter by Assignee
+      <div className="min-w-[200px]">
+        <Label htmlFor="assignee-filter" className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-2 block">
+          Assignee
         </Label>
-        <div className="mt-1.5">
+        <div>
           <Select
             value={state.filters.assignee[0] || ''}
             onValueChange={(value) => {
@@ -166,7 +164,7 @@ export function FilterControls() {
               }
             }}
           >
-            <SelectTrigger id="assignee-filter" aria-label="Filter by assignee">
+            <SelectTrigger id="assignee-filter" aria-label="Filter by assignee" className="h-9 text-sm">
               <SelectValue placeholder="Select assignee..." />
             </SelectTrigger>
             <SelectContent>
@@ -180,17 +178,17 @@ export function FilterControls() {
           
           {/* Selected assignees */}
           {state.filters.assignee.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-2">
+            <div className="flex flex-wrap gap-1.5 mt-2">
               {state.filters.assignee.map((assignee) => (
                 <span
                   key={assignee}
-                  className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-md bg-primary text-primary-foreground"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-[var(--radius-sm)] bg-primary text-primary-foreground shadow-sm"
                 >
                   {assignee}
                   <button
                     type="button"
                     onClick={() => handleAssigneeToggle(assignee)}
-                    className="hover:bg-primary/80 rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-blue-600 dark:focus-visible:outline-blue-400"
+                    className="hover:opacity-80 rounded-sm transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary-foreground"
                     aria-label={`Remove ${assignee} filter`}
                   >
                     <X className="size-3" />
@@ -208,13 +206,13 @@ export function FilterControls() {
           <Button
             type="button"
             variant="outline"
-            size="default"
+            size="sm"
             onClick={handleClearFilters}
-            className="h-9"
+            className="h-9 text-sm font-medium"
             aria-label="Clear all filters"
           >
-            <X className="size-4 mr-2" />
-            Clear Filters
+            <X className="size-[15px] mr-1.5" />
+            Clear
           </Button>
         </div>
       )}

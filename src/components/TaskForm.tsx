@@ -23,7 +23,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Trash2 } from 'lucide-react';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { CalendarIcon, Trash2 } from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface TaskFormProps {
   task?: Task; // undefined for create, populated for edit
@@ -64,12 +72,8 @@ export function TaskForm({
   const [title, setTitle] = useState(task?.title || '');
   const [status, setStatus] = useState<TaskStatus>(task?.status || 'not-started');
   const [assignee, setAssignee] = useState(task?.assignee || '');
-  const [startDate, setStartDate] = useState(
-    task?.startDate ? formatDateForInput(task.startDate) : ''
-  );
-  const [endDate, setEndDate] = useState(
-    task?.endDate ? formatDateForInput(task.endDate) : ''
-  );
+  const [startDate, setStartDate] = useState<Date | undefined>(task?.startDate);
+  const [endDate, setEndDate] = useState<Date | undefined>(task?.endDate);
   const [dependencyId, setDependencyId] = useState(task?.dependencyId || '');
 
   // Validation state
@@ -94,8 +98,8 @@ export function TaskForm({
       setTitle(task.title);
       setStatus(task.status);
       setAssignee(task.assignee);
-      setStartDate(formatDateForInput(task.startDate));
-      setEndDate(formatDateForInput(task.endDate));
+      setStartDate(task.startDate);
+      setEndDate(task.endDate);
       setDependencyId(task.dependencyId || '');
     }
   }, [task]);
@@ -143,9 +147,7 @@ export function TaskForm({
     // Validate date range - end date must be >= start date
     // This prevents invalid task durations and ensures logical timeline
     if (startDate && endDate) {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      if (end < start) {
+      if (endDate < startDate) {
         newErrors.endDate = 'End date must be after start date';
       }
     }
@@ -188,8 +190,8 @@ export function TaskForm({
       title,
       status,
       assignee,
-      startDate: new Date(startDate),
-      endDate: new Date(endDate),
+      startDate: startDate as Date,
+      endDate: endDate as Date,
       dependencyId: dependencyId || undefined,
       createdAt: task?.createdAt || new Date(),
       updatedAt: new Date(),
@@ -206,8 +208,8 @@ export function TaskForm({
     setTitle('');
     setStatus('not-started');
     setAssignee('');
-    setStartDate('');
-    setEndDate('');
+    setStartDate(undefined);
+    setEndDate(undefined);
     setDependencyId('');
     setErrors({});
     setTouched({});
@@ -253,70 +255,74 @@ export function TaskForm({
         )}
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="status">
-          Status <span className="text-red-500">*</span>
-        </Label>
-        <Select
-          value={status}
-          onValueChange={(value) => {
-            setStatus(value as TaskStatus);
-            handleBlur('status');
-          }}
-        >
-          <SelectTrigger
-            id="status"
-            aria-invalid={touched.status && errors.status ? 'true' : 'false'}
-            aria-describedby={touched.status && errors.status ? 'status-error' : undefined}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="status">
+            Status <span className="text-red-500">*</span>
+          </Label>
+          <Select
+            value={status}
+            onValueChange={(value) => {
+              setStatus(value as TaskStatus);
+              handleBlur('status');
+            }}
           >
-            <SelectValue placeholder="Select status" />
-          </SelectTrigger>
-          <SelectContent>
-            {STATUS_OPTIONS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {touched.status && errors.status && (
-          <p id="status-error" className="text-sm text-red-500">
-            {errors.status}
-          </p>
-        )}
-      </div>
+            <SelectTrigger
+              id="status"
+              aria-invalid={touched.status && errors.status ? 'true' : 'false'}
+              aria-describedby={touched.status && errors.status ? 'status-error' : undefined}
+              className='w-full'
+            >
+              <SelectValue placeholder="Select status" />
+            </SelectTrigger>
+            <SelectContent>
+              {STATUS_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {touched.status && errors.status && (
+            <p id="status-error" className="text-sm text-red-500">
+              {errors.status}
+            </p>
+          )}
+        </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="assignee">
-          Assignee <span className="text-red-500">*</span>
-        </Label>
-        <Select
-          value={assignee}
-          onValueChange={(value) => {
-            setAssignee(value);
-            handleBlur('assignee');
-          }}
-        >
-          <SelectTrigger
-            id="assignee"
-            aria-invalid={touched.assignee && errors.assignee ? 'true' : 'false'}
-            aria-describedby={touched.assignee && errors.assignee ? 'assignee-error' : undefined}
+        <div className="space-y-2">
+          <Label htmlFor="assignee">
+            Assignee <span className="text-red-500">*</span>
+          </Label>
+          <Select
+            value={assignee}
+            onValueChange={(value) => {
+              setAssignee(value);
+              handleBlur('assignee');
+            }}
           >
-            <SelectValue placeholder="Select assignee" />
-          </SelectTrigger>
-          <SelectContent>
-            {ASSIGNEE_OPTIONS.map((name) => (
-              <SelectItem key={name} value={name}>
-                {name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {touched.assignee && errors.assignee && (
-          <p id="assignee-error" className="text-sm text-red-500">
-            {errors.assignee}
-          </p>
-        )}
+            <SelectTrigger
+              id="assignee"
+              aria-invalid={touched.assignee && errors.assignee ? 'true' : 'false'}
+              aria-describedby={touched.assignee && errors.assignee ? 'assignee-error' : undefined}
+              className='w-full'
+            >
+              <SelectValue placeholder="Select assignee" />
+            </SelectTrigger>
+            <SelectContent>
+              {ASSIGNEE_OPTIONS.map((name) => (
+                <SelectItem key={name} value={name}>
+                  {name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {touched.assignee && errors.assignee && (
+            <p id="assignee-error" className="text-sm text-red-500">
+              {errors.assignee}
+            </p>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -324,15 +330,37 @@ export function TaskForm({
           <Label htmlFor="startDate">
             Start Date <span className="text-red-500">*</span>
           </Label>
-          <Input
-            id="startDate"
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            onBlur={() => handleBlur('startDate')}
-            aria-invalid={touched.startDate && errors.startDate ? 'true' : 'false'}
-            aria-describedby={touched.startDate && errors.startDate ? 'startDate-error' : undefined}
-          />
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                id="startDate"
+                variant="outline"
+                className={cn(
+                  'w-full justify-start text-left font-normal',
+                  !startDate && 'text-muted-foreground'
+                )}
+                aria-invalid={touched.startDate && errors.startDate ? 'true' : 'false'}
+                aria-describedby={touched.startDate && errors.startDate ? 'startDate-error' : undefined}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {startDate ? format(startDate, 'PPP') : <span>Pick a date</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={startDate}
+                onSelect={(date) => {
+                  setStartDate(date);
+                  handleBlur('startDate');
+                }}
+                fromYear={startDate ? startDate.getFullYear() - 5 : undefined}
+                toYear={endDate ? endDate.getFullYear() : undefined}
+                captionLayout='dropdown'
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
           {touched.startDate && errors.startDate && (
             <p id="startDate-error" className="text-sm text-red-500">
               {errors.startDate}
@@ -344,15 +372,37 @@ export function TaskForm({
           <Label htmlFor="endDate">
             End Date <span className="text-red-500">*</span>
           </Label>
-          <Input
-            id="endDate"
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            onBlur={() => handleBlur('endDate')}
-            aria-invalid={touched.endDate && errors.endDate ? 'true' : 'false'}
-            aria-describedby={touched.endDate && errors.endDate ? 'endDate-error' : undefined}
-          />
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                id="endDate"
+                variant="outline"
+                className={cn(
+                  'w-full justify-start text-left font-normal',
+                  !endDate && 'text-muted-foreground'
+                )}
+                aria-invalid={touched.endDate && errors.endDate ? 'true' : 'false'}
+                aria-describedby={touched.endDate && errors.endDate ? 'endDate-error' : undefined}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {endDate ? format(endDate, 'PPP') : <span>Pick a date</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={endDate}
+                onSelect={(date) => {
+                  setEndDate(date);
+                  handleBlur('endDate');
+                }}
+                captionLayout='dropdown'
+                toYear={startDate ? startDate.getFullYear() + 5 : undefined}
+                initialFocus
+                disabled={(date) => startDate ? date < startDate : false}
+              />
+            </PopoverContent>
+          </Popover>
           {touched.endDate && errors.endDate && (
             <p id="endDate-error" className="text-sm text-red-500">
               {errors.endDate}
@@ -392,7 +442,7 @@ export function TaskForm({
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete Task</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Are you sure you want to delete "{task.title}"? This action cannot be undone.
+                  Are you sure you want to delete "<span className='font-semibold'>{task.title}</span>"? This action cannot be undone.
                   Any tasks that depend on this task will have their dependencies removed.
                 </AlertDialogDescription>
               </AlertDialogHeader>
@@ -417,14 +467,4 @@ export function TaskForm({
       </div>
     </form>
   );
-}
-
-/**
- * Formats a Date object to YYYY-MM-DD string for input[type="date"]
- */
-function formatDateForInput(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
 }
