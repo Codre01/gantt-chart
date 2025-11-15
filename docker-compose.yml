@@ -5,17 +5,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
     environment:
       - NODE_ENV=production
     restart: unless-stopped
-    networks:
-      - dokploy-network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.gnattchart-frontend-qpjbnw-router-2.rule=Host(`gnattchart-frontend-qpjbnw-c1b6e8-105-113-72-186.traefik.me`)"
-      - "traefik.http.routers.gnattchart-frontend-qpjbnw-router-2.entrypoints=web"
-      - "traefik.http.services.gnattchart-frontend-qpjbnw-service-2.loadbalancer.server.port=3000"
-
-networks:
-  dokploy-network:
-    external: true
