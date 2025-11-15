@@ -2,12 +2,12 @@ FROM node:20-alpine AS base
 
 # Dependencies stage
 FROM base AS deps
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat python3 make g++
 WORKDIR /app
 
 # Copy package files
 COPY package.json package-lock.json* ./
-RUN npm install --frozen-lockfile
+RUN npm install
 
 # Builder stage
 FROM base AS builder
